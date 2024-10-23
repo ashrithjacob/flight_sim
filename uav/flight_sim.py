@@ -67,7 +67,7 @@ def router(state) -> Literal["call_tool", "__end__", "continue"]:
     return "continue"
 
 
-llm = ChatOpenAI(model="gpt-4o", max_tokens=200, temperature=0.5)
+llm = ChatOpenAI(model="gpt-4o", max_tokens=200, temperature=0.7)
 # llm = llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
 
 mission_commander = create_agent(
@@ -75,7 +75,7 @@ mission_commander = create_agent(
     [flight_tools.mavproxy_command, flight_tools.telemetry_request, flight_tools.system_alert, flight_tools.communication],
     system_message=flight_roles.mission_commander_role,
 )
-mission_commander_node = functools.partial(agent_node, agent=mission_commander, name="Mission Commander")
+mission_commander_node = functools.partial(agent_node, agent=mission_commander, name="Mission-Commander")
 
 # chart_generator
 flight_operator= create_agent(
@@ -83,7 +83,7 @@ flight_operator= create_agent(
     [flight_tools.mavproxy_command, flight_tools.telemetry_request, flight_tools.system_alert, flight_tools.communication],
     system_message=flight_roles.flight_operator_role,
 )
-flight_operator_node = functools.partial(agent_node, agent=flight_operator, name="Flight Operator")
+flight_operator_node = functools.partial(agent_node, agent=flight_operator, name="Flight-Operator")
 
 # copilot
 autopilot_system = create_agent(
@@ -100,15 +100,15 @@ systems_analyst = create_agent(
     system_message=flight_roles.systems_analyst_role,
 )
 systems_analyst_node = functools.partial(
-    agent_node, agent=systems_analyst, name="Systems analyst"
+    agent_node, agent=systems_analyst, name="Systems-analyst"
 )
 
 workflow = StateGraph(AgentState)
 
-workflow.add_node("Mission Commander", mission_commander_node)
-workflow.add_node("Flight Operator", flight_operator_node)
+workflow.add_node("Mission-Commander", mission_commander_node)
+workflow.add_node("Flight-Operator", flight_operator_node)
 workflow.add_node("auto-pilot system", autopilot_system_node)
-workflow.add_node("Systems analyst", systems_analyst_node)
+workflow.add_node("Systems-analyst", systems_analyst_node)
 tools = [flight_tools.mavproxy_command, flight_tools.telemetry_request, flight_tools.system_alert, flight_tools.communication, flight_tools.autopilot_status_update]
 
 tool_node = ToolNode(tools)
@@ -116,28 +116,28 @@ workflow.add_node("call_tool", tool_node)
 
 # the params are: 'from', 'to', 'condition'
 workflow.add_conditional_edges(
-    "Mission Commander",
+    "Mission-Commander",
     router,
-    {"continue": "Flight Operator", "call_tool": "call_tool", "__end__": END},
+    {"continue": "Flight-Operator", "call_tool": "call_tool", "__end__": END},
 )
 workflow.add_conditional_edges(
-    "Flight Operator",
+    "Flight-Operator",
     router,
-    {"continue": "Systems analyst", "call_tool": "call_tool", "__end__": END},
+    {"continue": "Systems-analyst", "call_tool": "call_tool", "__end__": END},
 )
 workflow.add_conditional_edges(
-    "Systems analyst",
+    "Systems-analyst",
     router,
-    {"continue": "Mission Commander", "call_tool": "call_tool", "__end__": END},
+    {"continue": "Mission-Commander", "call_tool": "call_tool", "__end__": END},
 )
 workflow.add_conditional_edges(
     "auto-pilot system",
     lambda x: x["sender"],
     {
-        "Mission Commander": "Mission Commander",
-        "Flight Operator": "Flight Operator",
+        "Mission-Commander": "Mission-Commander",
+        "Flight-Operator": "Flight-Operator",
         "auto-pilot system": "auto-pilot system",
-        "Systems analyst": "Systems analyst",
+        "Systems-analyst": "Systems-analyst",
     },
 )
 
@@ -149,13 +149,13 @@ workflow.add_conditional_edges(
     # who invoked the tool
     lambda x: x["sender"],
     {
-        "Mission Commander": "Mission Commander",
-        "Flight Operator": "Flight Operator",
+        "Mission-Commander": "Mission-Commander",
+        "Flight-Operator": "Flight-Operator",
         "auto-pilot system": "auto-pilot system",
-        "Systems analyst": "Systems analyst",
+        "Systems-analyst": "Systems-analyst",
     },
 )
-workflow.add_edge(START, "Mission Commander")
+workflow.add_edge(START, "Mission-Commander")
 graph = workflow.compile()
 
 
@@ -171,7 +171,7 @@ events = graph.stream(
     {"recursion_limit": 150},
 )
 
-'''
+
 for i, s in enumerate(events, 1):
     key = list(s.keys())[0]
     if key == "call_tool":
@@ -179,7 +179,4 @@ for i, s in enumerate(events, 1):
             f"Step{i}: {s[key]['messages'][0].name} --> {s[key]['messages'][0].content}"
         )
         print("----")
-'''
-for s in events:
-    print(s)
-    print("----")
+
