@@ -159,24 +159,5 @@ workflow.add_edge(START, "Mission-Commander")
 graph = workflow.compile()
 
 
-events = graph.stream(
-    {
-        "messages": [
-            HumanMessage(
-                content="Begin the mission to deliver the package to the specified coordinates: 37.7749, -122.4194",
-            )
-        ],
-    },
-    # Maximum number of steps to take in the graph
-    {"recursion_limit": 150},
-)
 
-
-for i, s in enumerate(events, 1):
-    key = list(s.keys())[0]
-    if key == "call_tool":
-        print(
-            f"Step{i}: {s[key]['messages'][0].name} --> {s[key]['messages'][0].content}"
-        )
-        print("----")
 
